@@ -7,7 +7,7 @@ function doGet(e) {
   if (e.parameter == 'undefined') {
     result = 'No Parameters'; // Handle case where no parameters are passed
   } else {
-    var sheet_id = '1lP0Zml-N00BaXpHimzrqbZ91syN4kfxaphVVYixaKQo'; // Spreadsheet ID
+    var sheet_id = 'YOUR SPREADSHEET ID'; // Spreadsheet ID
     var sheet = SpreadsheetApp.openById(sheet_id).getActiveSheet();
     var newRow = sheet.getLastRow() + 1; // Get the next empty row
     var rowData = []; // Array to store row data
