@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .result-section {
+            padding: 3rem 0;
+        }
+        .result-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .prediction-plot {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 2rem;
+        }
+        table.data {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.data th, table.data td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table.data th {
+            background-color: #3498db;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .assistant-card {
+            border-left: 4px solid #3498db;
+            margin-top: 2rem;
+        }
+        .message-container {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            margin-left: auto;
+        }
+        .assistant-message {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            max-width: 80%;
+        }
+        .loading-spinner {
+            display: none;
+            width: 2rem;
+            height: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Power & Unit Predictor</a>
+        </div>
+    </nav>
+
+    <div class="container result-section">
+        <div class="row">
+            <div class="col-12">
+                <div class="card result-card">
+                    <div class="card-body">
+                        <h2 class="card-title">48-Hour Prediction Results</h2>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <img src="{{ plot }}" alt="Prediction Plot" class="prediction-plot img-fluid">
+                            </div>
+                            <div class="col-md-4">
+                                <div class="table-responsive">
+                                    <table class="data table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>DATETIME</th>
+                                                <th>POWER</th>
+                                                <th>UNITS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in table_data %}
+                                            <tr>
+                                                <td>{{ row[0] }}</td>
+                                                <td>{{ "%.2f"|format(row[1]) }}</td>
+                                                <td>{{ "%.4f"|format(row[2]) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card assistant-card mt-4">
+                            <div class="card-body">
+                                <h4 class="card-title">AI Power Assistant</h4>
+                                <div class="message-container" id="messageContainer">
+                                    <div class="assistant-message">
+                                        Ask me about the power predictions.
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="userQuery" placeholder="Ask about the predictions...">
+                                    <button class="btn btn-primary" type="button" id="askButton">
+                                        <span id="buttonText">Ask</span>
+                                        <div class="spinner-border spinner-border-sm text-light loading-spinner" role="status" id="loadingSpinner">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <a href="/" class="btn btn-primary mt-3">Make Another Prediction</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-3">
+        <div class="container">
+            <p class="mb-0">Power Consumption Prediction System &copy; 2025</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const askButton = document.getElementById('askButton');
+            const userQuery = document.getElementById('userQuery');
+            const messageContainer = document.getElementById('messageContainer');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const buttonText = document.getElementById('buttonText');
+            
+            function addMessage(text, isUser) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = isUser ? 'user-message' : 'assistant-message';
+                messageDiv.textContent = text;
+                messageContainer.appendChild(messageDiv);
+                messageContainer.scrollTop = messageContainer.scrollHeight;
+            }
+            
+            askButton.addEventListener('click', async function() {
+                const query = userQuery.value.trim();
+                if (!query) return;
+                
+                addMessage(query, true);
+                userQuery.value = '';
+                
+                // Show loading state
+                loadingSpinner.style.display = 'inline-block';
+                buttonText.style.display = 'none';
+                
+                try {
+                    const response = await fetch('/ask_assistant', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ query: query })
+                    });
+                    
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    
+                    const data = await response.json();
+                    addMessage(data.response, false);
+                } catch (error) {
+                    addMessage("Sorry, I couldn't process your request.", false);
+                    console.error('Error:', error);
+                } finally {
+                    // Hide loading state
+                    loadingSpinner.style.display = 'none';
+                    buttonText.style.display = 'inline';
+                }
+            });
+            
+            // Allow pressing Enter to submit
+            userQuery.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    askButton.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
