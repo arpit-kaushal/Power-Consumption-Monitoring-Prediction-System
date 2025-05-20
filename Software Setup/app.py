@@ -23,7 +23,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Configure Gemini API
 try:
-    genai.configure(api_key="AIzaSyATsTQFDTVrWddXFnOLVWIQic_-jrxLdz4")
+    genai.configure(api_key="YOUR API KEY HERE")
     model_gemini = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
     print(f"Gemini API configuration failed: {e}")
